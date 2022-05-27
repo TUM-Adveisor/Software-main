@@ -1,0 +1,166 @@
+#:kivy 2.1.0
+#:import utils kivy.utils
+#chess piece drag behavior 
+<Piece>:
+    drag_rectangle: self.x, self.y, self.width, self.height
+    drag_timeout: 10000000000
+    drag_distance: 0
+#main GUI with chess board
+<GUILayout>
+    name: "main"
+    canvas.before:
+        Color: 
+            rgba:(1,1,1,1)
+        Rectangle:
+            pos: self.pos
+            size: self.size
+    BoxLayout:
+        orientation: 'vertical'
+        size: root.width, root.height 
+        #Top navigation bar
+        ActionBar:
+            font_size: 50
+            size: root.width, root.height *.12
+            background_image: 'white-bg.png'
+            background_color: (0/255,101/255,189/255,1)
+            ActionView:
+                ActionPrevious:
+                    title_text_size: 5
+                    title: '  Adveisor Control'
+                    with_previous: False
+                    app_icon: 'adveisor.png'
+                    on_press: 
+                        root.manager.transition.direction = 'left'
+                        root.manager.current = 'config'
+        GridLayout: 
+            cols:2
+            #chess board
+            FloatLayout:
+                size_hint: (0.546,1)
+                canvas.before:
+                    Rectangle:
+                        pos: self.pos 
+                        size: self.size 
+                        source: 'Chess_Board.png'
+                RelativeLayout:
+                    id: chess_board
+                    turn: 'w'
+            # side terminal stuff
+            BoxLayout:
+                size_hint: (0.454,1)
+                orientation: "vertical"
+                TextInput:
+                    id: cmd_out
+                    size_hint: (1,0.6)
+                    text: "Mockup Terminal"
+                TextInput:
+                    size_hint: (1,0.2)
+                    text: "command"
+                BoxLayout:
+                    size_hint: (1,0.2)
+                    orientation: "horizontal"
+                    Button:
+                        text:'reset'
+                        on_press: root.reset_board()
+                    Button:
+                        text:'new round'
+                        on_press: root.start_game()
+            #bottom Status bar 
+            Label:
+                text: ""
+                halign: 'left' 
+                size_hint: (0.55,0.05)
+                background_color: (0/255,101/255,189/255,1)
+                canvas.before:
+                    Color: 
+                        rgba: self.background_color
+                    Rectangle:
+                        size: self.size
+                        pos: self.pos
+            Label:
+                text: "Idling... "
+                text_size: self.size
+                font_size: 10
+                halign: 'right'
+                valign: 'middle'
+                size_hint: (0.45,0.05)
+                background_color: (0/255,101/255,189/255,1)
+                canvas.before:
+                    Color: 
+                        rgba: self.background_color
+                    Rectangle:
+                        size: self.size
+                        pos: self.pos
+#second screen, just copy pasted main screen with deleted stuff as mock up
+<ConfigLayout>
+    name: "config"
+    canvas.before:
+        Color: 
+            rgba:(1,1,1,1)
+        Rectangle:
+            pos: self.pos
+            size: self.size
+    BoxLayout:
+        orientation: 'vertical'
+        size: root.width, root.height 
+        ActionBar:
+            font_size: 50
+            size: root.width, root.height *.12
+            background_image: 'white-bg.png'
+            background_color: (0/255,101/255,189/255,1)
+            ActionView:
+                ActionPrevious:
+                    title_text_size: 5
+                    title: '  Adveisor Control'
+                    with_previous: False
+                    app_icon: 'adveisor.png'
+                    on_press: 
+                        root.manager.transition.direction = 'right'
+                        root.manager.current = 'main'
+
+        BoxLayout:
+            orientation: "vertical"
+            Label:
+                text:'Settings'
+                font_size: 20
+                halign: 'right'
+                valign: 'middle'
+                background_color: (9/255,28/255,87/255,1)
+                canvas.before:
+                    Color: 
+                        rgba: self.background_color
+                    Rectangle:
+                        size: self.size
+                        pos: self.pos
+            Button:
+                text:'Connect DB'
+            Button:
+                text:'Load Last Round'
+        GridLayout: 
+            cols:2
+            size_hint: (1,0.05)
+            Label:
+                text: ""
+                halign: 'left' 
+                size_hint: (0.55,0.05)
+                background_color: (0/255,101/255,189/255,1)
+                canvas.before:
+                    Color: 
+                        rgba: self.background_color
+                    Rectangle:
+                        size: self.size
+                        pos: self.pos
+            Label:
+                text: "Idling... "
+                text_size: self.size
+                font_size: 10
+                halign: 'right'
+                valign: 'middle'
+                size_hint: (0.45,0.05)
+                background_color: (0/255,101/255,189/255,1)
+                canvas.before:
+                    Color: 
+                        rgba: self.background_color
+                    Rectangle:
+                        size: self.size
+                        pos: self.pos
