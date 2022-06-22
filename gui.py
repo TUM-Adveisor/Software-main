@@ -1,3 +1,9 @@
+import socket
+from turtle import pos
+from kivyClient import *
+from kivy.clock import Clock
+from threading import Thread
+
 #Basic Imports 
 from kivy.app import App
 from kivy.core.window import Window
@@ -23,8 +29,9 @@ from stockfish import Stockfish
 stockfish = Stockfish(path="stockfish_14.1_win_x64_avx2.exe", depth=15, parameters={"Threads": 2, "Minimum Thinking Time": 5})
 
 #Basic Settings
-Window.size = (480,320)
+Window.size = (320,480)
 Window.borderless = False
+
 
 ###### 					 ___  ___   ___  ___  					######
 ###### 					|_ _|| . | | . \| . | 					######
@@ -53,9 +60,29 @@ checker_size = [0.0,0.0]
 board_size = [0.0,0.0]
 bottom_margin = 0.0
 GlobalLayout = None
-autoPlay = True
-
+autoPlay = False
+data = []
+counter = 0
 #Position Conversion
+def load_FEN_notation(position):
+	cmd = [['',''],['',''],['',''],['',''],['',''],['',''],['',''],['','']]
+	fen = position.split(" ")
+	pos = fen[0].split("/")
+	for x in range(len(pos)):
+		for y in range(len(pos[x])):
+			if(pos[x][y].isnumeric() == True):
+				for z in range(int(pos[x][y])):
+					cmd[x][0] = cmd[x][0] + '0'
+					cmd[x][1] = cmd[x][1] +'0'
+			elif (pos[x][y].islower() == True):
+				cmd[x][0] = cmd[x][0] + pos[x][y]
+				cmd[x][1] = cmd[x][1] + 'w'
+			else:
+				cmd[x][0] = cmd[x][0] + pos[x][y].lower()
+				cmd[x][1] = cmd[x][1] + 'b'
+	GlobalLayout.ids.chess_board.turn = fen[1]
+	print(fen[1])
+	return cmd
 def to_chess_notation(move_from, move_to):
 	x = "abcdefgh"
 	y = "12345678"
@@ -72,7 +99,7 @@ def to_move_position(chess_notation):
 				movePos[i*2+1] = j
 	return movePos
 def position_to_coordinate(pos): 
-	piece_coordinate = (checker_size[0] * pos[0] , checker_size[1] * pos[1] + board_size[1] * 0.05 )
+	piece_coordinate = (checker_size[0] * pos[0] , checker_size[1] * pos[1] + bottom_margin )
 	return piece_coordinate
 def coordinate_to_position(coordinate): 
 	piece_position = (round(coordinate[0]/ checker_size[0]), round((coordinate[1] - bottom_margin ) / checker_size[1]))
@@ -82,8 +109,8 @@ def grid_sizeing(self, x, y):
 	global checker_size, bottom_margin, board_size
 	board_size = (self.ids.chess_board.size[0] , self.ids.chess_board.size[1])
 	checker_size = (board_size[0] / 8.1 , board_size[1] / 8.1)
-	bottom_margin = board_size[1] * 0.05
-	piece_position = (checker_size[0] * x , checker_size[1] * y + board_size[1] * 0.05 )
+	bottom_margin = board_size[1] * 0.1 + self.ids.terminal.size[1]
+	piece_position = (checker_size[0] * x , checker_size[1] * y + bottom_margin)
 	return piece_position
 
 #Classes for enabling mulitple screens
@@ -91,9 +118,70 @@ class WindowManager(ScreenManager):
 	pass
 class ConfigLayout(Screen,Widget):
 	pass
+def loop():
+	global data, GlobalLayout
+	if (len(data) == 0):
+		return
+	for x in range(len(data)):
+		cmd = data.pop(0).split(",")
+		if(cmd[0] == "hehe"):
+			print("starting game: ")
+			GlobalLayout.start_game()
+		if(cmd[0] == "move"):
+			print(cmd[1])
+			make_move(cmd[1])
+			if autoPlay == True:
+				bestMove = stockfish.get_best_move()
+				print(bestMove)
+				make_move(bestMove)
+	counter == 0
+def make_move(move):
+	if stockfish.is_move_correct(move):
+		#coordinate transformation
+		move_pos = to_move_position(move)
+		#kivyLib communication
+		sock.send_data( "move," +str(move_pos[0]) + "," +str(move_pos[1]) + "," + str(move_pos[2]) + ","+ str(move_pos[3]) )
+		stockfish.make_moves_from_current_position([move])
+		#Server communication
+		#dataToSend = {'game_round': '1', 'game_type': 'chess', 'game_data': move, 'is_new_round': 0}
+		#requests.post(url, data = dataToSend)
+		print(move)
+		#moving logic 
+		for piece in GlobalLayout.ids.chess_board.children:
+			if coordinate_to_position((piece.pos[0], piece.pos[1])) == (move_pos[0], move_pos[1]):
+				piece.previous_position  = (move_pos[0],move_pos[1]) 
+				GlobalLayout.ids.cmd_out.text = GlobalLayout.ids.cmd_out.text + "\n" + piece.side + ": " + move
+				for checkpiece in GlobalLayout.ids.chess_board.children:
+					if coordinate_to_position((checkpiece.pos[0], checkpiece.pos[1])) == (move_pos[2], move_pos[3]) and checkpiece.side !=  piece.side:
+						GlobalLayout.ids.chess_board.remove_widget(checkpiece)
+						break
+				piece.pos = position_to_coordinate((move_pos[2], move_pos[3]))
+				if GlobalLayout.ids.chess_board.turn ==  'w':
+					GlobalLayout.ids.chess_board.turn =  'b'
+					print('Now Blacks Turn')
+				else:
+					GlobalLayout.ids.chess_board.turn = 'w'
+					print('Now White Turn')
+				break
+	else:
+		print("false move!")
 
 #Main GUI Menu
 class GUILayout(Screen,Widget):
+	def __init__(self, **kwargs):
+		super(GUILayout, self).__init__(**kwargs)
+		global sock
+		sock = MySocket()
+		t = Thread(target=self.getData)
+		t.daemon = True		
+		t.start()
+
+	def getData(self):
+		while True:
+			global data
+			data.append(sock.get_data().decode("ascii"))
+			#print("got data" + data)
+
 	#Widget layer conversion. Kivy quirky magic: set parameter? No! DELETE the widget and make a NEW one!?! :D 
 	#How I wish the documentation is better then bunch of Stackoverflow posts....
 	def bring_to_front(self, widget):
@@ -107,11 +195,11 @@ class GUILayout(Screen,Widget):
 				self.ids.chess_board.remove_widget(widget)
 				self.ids.chess_board.add_widget(widget, -1)
 	#create chess pieces on the boards 
+
 	def start_game(self):
 		#TO_DO: Fully Implement load by FEN (Replace cmd or make a FEN to cmd parser)
 		stockfish.set_fen_position("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
-		cmd = [["rnbqkbnr","wwwwwwww"],['pppppppp','wwwwwwww'],['00000000','00000000'],['00000000','00000000'],
-			  ['00000000','00000000'],['00000000','00000000'],['pppppppp','bbbbbbbb'],["rnbqkbnr","bbbbbbbb"]]
+		cmd = load_FEN_notation("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
 		for j in range(8):
 			for k in range(8):
 				newPiece = None
@@ -133,11 +221,13 @@ class GUILayout(Screen,Widget):
 				newPiece.pos = grid_sizeing(self,k, j)
 				newPiece.previous_position = (k, j)
 				self.ids.chess_board.add_widget(newPiece)
-	#Not Implemented now
+	#Reset Chess Board
 	def reset_board(self):
 		pieces = [i for i in GlobalLayout.ids.chess_board.children]
 		for piece in pieces:
 			GlobalLayout.ids.chess_board.remove_widget(piece)
+
+				
 #main chess piece class
 class Piece(DragBehavior, Label, Widget):
 	def __init__(self, **args):
@@ -170,20 +260,22 @@ class Piece(DragBehavior, Label, Widget):
 			#print("Working!")
 		return super(Piece, self).on_touch_down(touch)
 
+
 	def on_touch_up(self, touch):
 		global checker_size, bottom_margin
-
 		if self.collide_point(*touch.pos):
 			GlobalLayout.send_to_back(self)
 
 			#snap to fit
 			snap_pos = (round(self.pos[0]/ checker_size[0]) * checker_size[0],round((self.pos[1] - bottom_margin ) / checker_size[1])  * checker_size[1] + bottom_margin )
 			#print("snap Pos:" + str(coordinate_to_position(snap_pos)))
-
 			#get current move from chess piece, and chuck it into stockfish to do the move logic wizardy y
 			move = to_chess_notation(self.previous_position, coordinate_to_position(snap_pos))
+			
 
 			if stockfish.is_move_correct(move):
+				move_pos = to_move_position(move)
+				sock.send_data( "move," +str(move_pos[0]) + "," +str(move_pos[1]) + "," + str(move_pos[2]) + ","+ str(move_pos[3]) )
 				stockfish.make_moves_from_current_position([move])
 				#Send Data to Server
 				dataToSend = {'game_round': '1', 'game_type': 'chess', 'game_data': move, 'is_new_round': 0}
@@ -207,29 +299,18 @@ class Piece(DragBehavior, Label, Widget):
 					#print('hmm_[B]:' + self.parent.turn)
 					self.parent.turn = 'w'
 					print('Now White Turn')
+
+				#Send Data to Server
+				#dataToSend = {'game_round': '1', 'game_type': 'chess', 'game_data': move, 'is_new_round': 0}
+				#requests.post(url, data = dataToSend)
+
+				#Show move in terminal
+				GlobalLayout.ids.cmd_out.text = GlobalLayout.ids.cmd_out.text + "\n" + self.side + ": " + move 
+				###print(stockfish.get_board_visual())
+				
 				if autoPlay == True:
 					bestMove = stockfish.get_best_move()
-					print(bestMove)
-					best_move_pos = to_move_position(bestMove)
-					stockfish.make_moves_from_current_position([bestMove])
-					dataToSend = {'game_round': '1', 'game_type': 'chess', 'game_data': bestMove, 'is_new_round': 0}
-					requests.post(url, data = dataToSend)
-					for piece in GlobalLayout.ids.chess_board.children:
-						if coordinate_to_position((piece.pos[0], piece.pos[1])) == (best_move_pos[0], best_move_pos[1]):
-							piece.previous_position  = (best_move_pos[0],best_move_pos[1]) 
-							GlobalLayout.ids.cmd_out.text = GlobalLayout.ids.cmd_out.text + "\n" + piece.side + ": " + bestMove
-							for checkpiece in self.parent.children:
-								if coordinate_to_position((checkpiece.pos[0], checkpiece.pos[1])) == (best_move_pos[2], best_move_pos[3]) and checkpiece.side == self.side:
-									GlobalLayout.ids.chess_board.remove_widget(checkpiece)
-									break
-							piece.pos = position_to_coordinate((best_move_pos[2], best_move_pos[3]))
-							if GlobalLayout.ids.chess_board.turn ==  'w':
-								GlobalLayout.ids.chess_board.turn =  'b'
-								print('Now Blacks Turn')
-							else:
-								GlobalLayout.ids.chess_board.turn = 'w'
-								print('Now White Turn')
-							break
+					make_move(bestMove)
 			else:
 				print("nope")
 				self.pos = position_to_coordinate(self.previous_position)
@@ -278,6 +359,7 @@ class MyApp(App):
 		ScrManager.add_widget(ConfigLayout())
 		return ScrManager
 
-
 if __name__ == '__main__':
-    MyApp().run()
+	Clock.schedule_interval(lambda dt: loop(), 0.1)
+	MyApp().run()
+	

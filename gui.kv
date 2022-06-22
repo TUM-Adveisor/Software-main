@@ -33,7 +33,7 @@
                         root.manager.transition.direction = 'left'
                         root.manager.current = 'config'
         GridLayout: 
-            cols:2
+            cols:1
             #chess board
             FloatLayout:
                 size_hint: (0.546,1)
@@ -45,17 +45,15 @@
                 RelativeLayout:
                     id: chess_board
                     turn: 'w'
-            # side terminal stuff
+            #terminal stuff
             BoxLayout:
-                size_hint: (0.454,1)
+                id: terminal
+                size_hint: (0.454,0.5)
                 orientation: "vertical"
                 TextInput:
                     id: cmd_out
-                    size_hint: (1,0.6)
-                    text: "Mockup Terminal"
-                TextInput:
-                    size_hint: (1,0.2)
-                    text: "command"
+                    size_hint: (1,0.8)
+                    text: "Terminal"
                 BoxLayout:
                     size_hint: (1,0.2)
                     orientation: "horizontal"
