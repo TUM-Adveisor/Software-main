@@ -42,9 +42,6 @@ def get_data():
         return clientsocket.recv(1024).decode("ascii")
     else:
         return "False"
-def processData():
-    cmd = get_data().split(",")
-    return cmd
 #while True:
 #    msg = input(">")
 #    clientsocket.send(msg.encode('ascii'))

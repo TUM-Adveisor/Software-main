@@ -9,6 +9,7 @@ class Connection:
         self._status = "Idle" # Status polled from "?" - we default for Idle for consistency
         self._debug = debug # In debug mode gcodelib will put output from grbl onto console
         self._serial = serial.Serial(
+            write_timeout=0,
             port = port,
             baudrate = 115200,
             parity=serial.PARITY_NONE,
@@ -30,7 +31,8 @@ class Connection:
             self._status = explode.group(1)
 
     def print_coords(self):
-        print(self._pos)
+        #print(self._pos)
+        pass
 
     def wait_for_movement_stop(self):
         while self._status != "Idle":

@@ -115,8 +115,8 @@
                     on_press: 
                         root.manager.transition.direction = 'right'
                         root.manager.current = 'main'
-
         BoxLayout:
+            size_hint: (1,1.2)
             orientation: "vertical"
             Label:
                 text:'Settings'
@@ -131,9 +131,78 @@
                         size: self.size
                         pos: self.pos
             Button:
-                text:'Connect DB'
+                id: AiToggle
+                text:'AI Enemy: off'
+                on_press: root.toggleGamemode()
             Button:
-                text:'Load Last Round'
+                id: MoveToggle
+                text:'Machine Move: on'
+                on_press: root.toggleMovemode()
+            Button:
+                id: ColorSelection
+                text:'Player Side: White'
+                on_press: root.colorSelection()
+            Button:
+                id: playerColorLock
+                text:'Player Color Lock: True'
+                on_press: root.playerMovementLock()
+            Button:
+                id: boardFrontSide
+                text:'Board Front Color: White'
+                on_press: root.boardFrontSide()
+        BoxLayout:
+            orientation: "horizontal"
+            canvas.before:
+                Color: 
+                    rgba:(0.5,0.5,0.5,1)
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+            Slider:
+                id: r
+                min: 0
+                max: 255
+                step: 1
+                orientation: 'vertical'
+                
+            Slider:
+                id: g
+                min: 0
+                max: 255
+                step: 1
+                orientation: 'vertical'
+               
+            Slider:
+                id: b
+                min: 0
+                max: 255
+                step: 1
+                orientation: 'vertical'
+                
+            Slider:
+                id: w
+                min: 0
+                max: 255
+                step: 1
+                orientation: 'vertical'
+               
+        BoxLayout:
+            orientation: "horizontal"
+            size_hint: (1,0.2)
+            canvas.before:
+                Color: 
+                    rgba:(0.5,0.5,0.5,1)
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+            Label:
+                text: "r: " + str(r.value)
+            Label:
+                text: "g: " +str(g.value)
+            Label:
+                text: "b: " +str(b.value)
+            Label:
+                text: "w: " +str(w.value)
         GridLayout: 
             cols:2
             size_hint: (1,0.05)
